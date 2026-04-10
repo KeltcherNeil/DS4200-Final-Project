@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import altair as alt
 import os, json
 
@@ -148,6 +149,17 @@ agg = (
 agg["region"] = agg["Country"].map(region_map).fillna("other")
 agg = agg.dropna(subset=["GDP"])
 
+REGION_LABELS = {
+    "america":                  "Americas",
+    "east_asia_pacific":        "East Asia & Pacific",
+    "europe_central_asia":      "Europe & Central Asia",
+    "middle_east_north_africa": "Middle East & N. Africa",
+    "south_asia":               "South Asia",
+    "sub_saharan_africa":       "Sub-Saharan Africa",
+    "other":                    "Other",
+}
+agg["region_label"] = agg["region"].map(REGION_LABELS)
+
 # ---------------------------------------------------------------------------
 # Altair chart
 # ---------------------------------------------------------------------------
@@ -156,7 +168,9 @@ region_select = alt.param(
     bind=alt.binding_radio(
         options=["all", "america", "east_asia_pacific", "europe_central_asia",
                  "middle_east_north_africa", "south_asia", "sub_saharan_africa"],
-        name="Filter by Region: "
+        labels=["All", "Americas", "East Asia & Pacific", "Europe & Central Asia",
+                "Middle East & N. Africa", "South Asia", "Sub-Saharan Africa"],
+        name="Region: "
     ),
     value="all"
 )
@@ -171,7 +185,24 @@ disorder_select = alt.param(
 )
 
 color_domain = list(REGION_COLORS.keys())
-color_range  = list(REGION_COLORS.values())
+color_range = list(REGION_COLORS.values())
+
+# ---------------------------------------------------------------------------
+# Shared legend style — applied consistently across all charts
+# ---------------------------------------------------------------------------
+_LEGEND_STYLE = dict(
+    titleFontSize=12,
+    titleFontWeight="bold",
+    titleColor="#343a40",
+    titlePadding=8,
+    labelFontSize=11,
+    labelColor="#495057",
+    labelPadding=6,
+    padding=10,
+    fillColor="#ffffff",
+    strokeColor="#dde3f0",
+    cornerRadius=6,
+)
 
 chart = (
     alt.Chart(agg)
@@ -198,9 +229,20 @@ chart = (
                 legend=alt.Legend(
                     title="World Region",
                     orient="right",
-                    labelFontSize=12,
-                    titleFontSize=13,
-                    symbolSize=120,
+                    labelExpr=(
+                        "{'america': 'Americas'"
+                        ", 'east_asia_pacific': 'East Asia & Pacific'"
+                        ", 'europe_central_asia': 'Europe & Central Asia'"
+                        ", 'middle_east_north_africa': 'Middle East & N. Africa'"
+                        ", 'south_asia': 'South Asia'"
+                        ", 'sub_saharan_africa': 'Sub-Saharan Africa'"
+                        ", 'other': 'Other'}[datum.value]"
+                    ),
+                    symbolSize=100,
+                    symbolType="circle",
+                    symbolStrokeWidth=0,
+                    rowPadding=5,
+                    **_LEGEND_STYLE,
                 ),
             ),
             alt.value("#dee2e6"),
@@ -214,18 +256,494 @@ chart = (
             alt.value(120), alt.value(60),
         ),
         tooltip=[
-            alt.Tooltip("Country:N",    title="Country"),
-            alt.Tooltip("region:N",     title="Region"),
-            alt.Tooltip("prevalence:Q", title="Avg Prevalence (%)", format=".3f"),
-            alt.Tooltip("GDP:Q",        title="GDP (M USD)",        format=",.0f"),
+            alt.Tooltip("Country:N",      title="Country"),
+            alt.Tooltip("region_label:N", title="Region"),
+            alt.Tooltip("prevalence:Q",   title="Avg Prevalence (%)", format=".3f"),
+            alt.Tooltip("GDP:Q",          title="GDP (M USD)",        format=",.0f"),
         ],
     )
     .add_params(region_select, disorder_select)
     .properties(width="container", height=520)
     .configure_axis(labelFontSize=12, titleFontSize=13,
                     labelColor="#495057", titleColor="#343a40")
-    .configure_legend(labelFontSize=12, titleFontSize=13)
+    .configure_legend(labelFontSize=11, titleFontSize=12)
     .configure_view(strokeWidth=0, fill="transparent")
 )
 
 chart_spec = json.dumps(chart.to_dict())
+
+# ---------------------------------------------------------------------------
+# Chart 2: Top 10 Countries by Max Anxiety Disorders (replicates chart.js)
+# ---------------------------------------------------------------------------
+top10_anxiety = (
+    df_no_world.groupby("Country")["Anxiety Disorders"]
+    .max()
+    .reset_index()
+    .nlargest(10, "Anxiety Disorders")
+    .sort_values("Anxiety Disorders", ascending=True)  # ascending so highest is at top in horizontal bar
+)
+
+anxiety_chart = (
+    alt.Chart(top10_anxiety)
+    .mark_bar(color="#2171b5", cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
+    .encode(
+        x=alt.X(
+            "Anxiety Disorders:Q",
+            title="Max Anxiety Disorders (% of population)",
+            axis=alt.Axis(grid=True, gridColor="#e9ecef",
+                          labelFontSize=12, titleFontSize=13,
+                          labelColor="#495057", titleColor="#343a40"),
+        ),
+        y=alt.Y("Country:N", sort=None, title=None,
+                axis=alt.Axis(labelFontSize=12, labelColor="#495057")),
+        tooltip=[
+            alt.Tooltip("Country:N", title="Country"),
+            alt.Tooltip("Anxiety Disorders:Q", format=".3f", title="Max Prevalence (%)"),
+        ],
+    )
+    .properties(width="container", height=380)
+)
+
+_anxiety_dict = anxiety_chart.to_dict()
+# Inline named datasets so the spec is self-contained
+if "datasets" in _anxiety_dict and "data" in _anxiety_dict:
+    _name = _anxiety_dict["data"].get("name")
+    if _name and _name in _anxiety_dict["datasets"]:
+        _anxiety_dict["data"] = {"values": _anxiety_dict["datasets"][_name]}
+        del _anxiety_dict["datasets"]
+anxiety_top10_spec = json.dumps(_anxiety_dict)
+
+# ---------------------------------------------------------------------------
+# Chart 3: Grouped Bar — Top & Bottom 10 GDP Countries, all disorders (2019)
+# ---------------------------------------------------------------------------
+data_2019 = df_no_world[df_no_world["Year"] == 2019].copy()
+data_2019 = data_2019.dropna(subset=["GDP"])
+
+top10_gdp    = data_2019.nlargest(10,  "GDP")[["Country"] + disorder_cols].copy()
+bottom10_gdp = data_2019.nsmallest(10, "GDP")[["Country"] + disorder_cols].copy()
+
+top10_gdp["GDP Group"]    = "Top 10 Highest GDP Countries"
+bottom10_gdp["GDP Group"] = "Bottom 10 Lowest GDP Countries"
+
+gdp_long = (
+    pd.concat([top10_gdp, bottom10_gdp])
+    .melt(id_vars=["Country", "GDP Group"], value_vars=disorder_cols,
+          var_name="Disorder", value_name="Prevalence")
+)
+
+DISORDER_COLOR_RANGE = ["#5c6bc0", "#26a69a", "#ef5350", "#8d6e63", "#ec407a"]
+
+_disorder_scale = alt.Scale(domain=disorder_cols, range=DISORDER_COLOR_RANGE)
+
+def _make_bar_panel(data, panel_title):
+    chart = (
+        alt.Chart(data)
+        .mark_bar(cornerRadiusTopLeft=2, cornerRadiusTopRight=2)
+        .encode(
+            x=alt.X("Country:N", title=None,
+                    axis=alt.Axis(labelAngle=-35, labelFontSize=11,
+                                  labelColor="#495057")),
+            xOffset=alt.XOffset("Disorder:N"),
+            y=alt.Y("Prevalence:Q", title="Percent (%) of Population",
+                    axis=alt.Axis(grid=True, gridColor="#e9ecef",
+                                  labelFontSize=11, titleFontSize=12,
+                                  labelColor="#495057", titleColor="#343a40")),
+            color=alt.Color("Disorder:N", scale=_disorder_scale, legend=None),
+            tooltip=[
+                alt.Tooltip("Country:N",    title="Country"),
+                alt.Tooltip("Disorder:N",   title="Disorder"),
+                alt.Tooltip("Prevalence:Q", format=".3f", title="Prevalence (%)"),
+            ],
+        )
+        .properties(width="container", height=260,
+                    title=alt.Title(panel_title, fontSize=13, fontWeight="bold",
+                                   color="#0d1b4b", anchor="start", offset=8))
+        .configure_view(strokeWidth=1, stroke="#dde3f0")
+    )
+    # Inline the data so named-dataset lookup doesn't fail
+    d = chart.to_dict()
+    if "datasets" in d and "data" in d:
+        name = d["data"].get("name")
+        if name and name in d["datasets"]:
+            d["data"] = {"values": d["datasets"][name]}
+            del d["datasets"]
+    return json.dumps(d)
+
+top_long    = gdp_long[gdp_long["GDP Group"] == "Top 10 Highest GDP Countries"]
+bottom_long = gdp_long[gdp_long["GDP Group"] == "Bottom 10 Lowest GDP Countries"]
+
+gdp_top_spec    = _make_bar_panel(top_long,    "Top 10 Highest GDP Countries")
+gdp_bottom_spec = _make_bar_panel(bottom_long, "Bottom 10 Lowest GDP Countries")
+
+# Keep gdp_grouped_bar_spec as a tuple for backwards-compat import
+gdp_grouped_bar_spec = (gdp_top_spec, gdp_bottom_spec)
+
+# ---------------------------------------------------------------------------
+# Globe land GeoJSON — fetched once at build time so pages work from file://
+# ---------------------------------------------------------------------------
+def _fetch_land_geojson():
+    """Download world-atlas TopoJSON and decode land feature → compact GeoJSON."""
+    import urllib.request
+    try:
+        url = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+        with urllib.request.urlopen(url, timeout=15) as _r:
+            topo = json.loads(_r.read())
+    except Exception:
+        return "null"
+    tf = topo.get("transform", {})
+    kx, ky = tf.get("scale", [1, 1])
+    tx, ty = tf.get("translate", [0, 0])
+    raw_arcs = topo["arcs"]
+    def _arc(idx):
+        pts, x, y = [], 0, 0
+        for dx, dy in raw_arcs[idx if idx >= 0 else ~idx]:
+            x += dx; y += dy
+            pts.append([round(x * kx + tx, 1), round(y * ky + ty, 1)])
+        return pts[::-1] if idx < 0 else pts
+    def _ring(arc_list):
+        coords = []
+        for i, idx in enumerate(arc_list):
+            seg = _arc(idx)
+            coords.extend(seg if i == 0 else seg[1:])
+        if coords and coords[0] != coords[-1]:
+            coords.append(coords[0])
+        return coords
+    def _geom_to_polys(geom):
+        """Recursively collect polygon rings from any geometry type."""
+        t = geom["type"]
+        if t == "Polygon":
+            return [[_ring(r) for r in geom["arcs"]]]
+        if t == "MultiPolygon":
+            return [[_ring(r) for r in poly] for poly in geom["arcs"]]
+        if t == "GeometryCollection":
+            result = []
+            for g in geom.get("geometries", []):
+                result.extend(_geom_to_polys(g))
+            return result
+        return []
+
+    polygons = _geom_to_polys(topo["objects"]["land"])
+    if not polygons:
+        return "null"
+    geo = {"type": "MultiPolygon", "coordinates": polygons}
+    return json.dumps(geo, separators=(",", ":"))
+
+land_geojson_str = _fetch_land_geojson()
+
+# ---------------------------------------------------------------------------
+# Chart 4: Choropleth — Global Total Disease Prevalence (2019)
+# ---------------------------------------------------------------------------
+_data_2019 = df_no_world[df_no_world["Year"] == 2019].copy()
+_data_2019["Total Disease"] = _data_2019[disorder_cols].sum(axis=1)
+
+# Country name → ISO 3166-1 numeric (world-atlas TopoJSON keyed by this)
+_ISO_NUM = {
+    "Afghanistan": 4,   "Albania": 8,       "Algeria": 12,      "American Samoa": 16,
+    "Andorra": 20,      "Angola": 24,       "Antigua and Barbuda": 28, "Argentina": 32,
+    "Armenia": 51,      "Australia": 36,    "Austria": 40,      "Azerbaijan": 31,
+    "Bahamas": 44,      "Bahrain": 48,      "Bangladesh": 50,   "Barbados": 52,
+    "Belarus": 112,     "Belgium": 56,      "Belize": 84,       "Benin": 204,
+    "Bermuda": 60,      "Bhutan": 64,       "Bolivia": 68,      "Bosnia and Herzegovina": 70,
+    "Botswana": 72,     "Brazil": 76,       "Brunei": 96,       "Bulgaria": 100,
+    "Burkina Faso": 854,"Burundi": 108,     "Cambodia": 116,    "Cameroon": 120,
+    "Canada": 124,      "Cape Verde": 132,  "Central African Republic": 140,
+    "Chad": 148,        "Chile": 152,       "China": 156,       "Colombia": 170,
+    "Comoros": 174,     "Congo": 178,       "Cook Islands": 184,"Costa Rica": 188,
+    "Croatia": 191,     "Cuba": 192,        "Cyprus": 196,      "Denmark": 208,
+    "Djibouti": 262,    "Dominica": 212,    "Dominican Republic": 214,
+    "Ecuador": 218,     "Egypt": 818,       "El Salvador": 222, "Equatorial Guinea": 226,
+    "Eritrea": 232,     "Estonia": 233,     "Eswatini": 748,    "Ethiopia": 231,
+    "Fiji": 242,        "Finland": 246,     "France": 250,      "Gabon": 266,
+    "Gambia": 270,      "Georgia": 268,     "Germany": 276,     "Ghana": 288,
+    "Greece": 300,      "Greenland": 304,   "Grenada": 308,     "Guam": 316,
+    "Guatemala": 320,   "Guinea": 324,      "Guinea-Bissau": 624,"Guyana": 328,
+    "Haiti": 332,       "Honduras": 340,    "Hungary": 348,     "Iceland": 352,
+    "India": 356,       "Indonesia": 360,   "Iran": 364,        "Iraq": 368,
+    "Ireland": 372,     "Israel": 376,      "Italy": 380,       "Jamaica": 388,
+    "Japan": 392,       "Jordan": 400,      "Kazakhstan": 398,  "Kenya": 404,
+    "Kiribati": 296,    "Kuwait": 414,      "Kyrgyzstan": 417,  "Laos": 418,
+    "Latvia": 428,      "Lebanon": 422,     "Lesotho": 426,     "Liberia": 430,
+    "Libya": 434,       "Lithuania": 440,   "Luxembourg": 442,  "Madagascar": 450,
+    "Malawi": 454,      "Malaysia": 458,    "Maldives": 462,    "Mali": 466,
+    "Malta": 470,       "Marshall Islands": 584, "Mauritania": 478,
+    "Mauritius": 480,   "Mexico": 484,      "Moldova": 498,     "Monaco": 492,
+    "Mongolia": 496,    "Montenegro": 499,  "Morocco": 504,     "Mozambique": 508,
+    "Myanmar": 104,     "Namibia": 516,     "Nauru": 520,       "Nepal": 524,
+    "Netherlands": 528, "New Zealand": 554, "Nicaragua": 558,   "Niger": 562,
+    "Nigeria": 566,     "North Korea": 408, "North Macedonia": 807,
+    "Northern Mariana Islands": 580, "Norway": 578, "Oman": 512,
+    "Pakistan": 586,    "Palau": 585,       "Palestine": 275,   "Panama": 591,
+    "Papua New Guinea": 598, "Paraguay": 600, "Peru": 604,      "Philippines": 608,
+    "Poland": 616,      "Portugal": 620,    "Puerto Rico": 630, "Qatar": 634,
+    "Romania": 642,     "Russia": 643,      "Rwanda": 646,
+    "Saint Kitts and Nevis": 659, "Saint Lucia": 662,
+    "Saint Vincent and the Grenadines": 670, "Samoa": 882,
+    "San Marino": 674,  "Saudi Arabia": 682,"Senegal": 686,     "Serbia": 688,
+    "Seychelles": 690,  "Sierra Leone": 694,"Singapore": 702,   "Slovakia": 703,
+    "Slovenia": 705,    "Solomon Islands": 90, "Somalia": 706,  "South Africa": 710,
+    "South Korea": 410, "South Sudan": 728, "Spain": 724,       "Sri Lanka": 144,
+    "Sudan": 729,       "Suriname": 740,    "Sweden": 752,      "Switzerland": 756,
+    "Syria": 760,       "Taiwan": 158,      "Tajikistan": 762,  "Tanzania": 834,
+    "Thailand": 764,    "Togo": 768,        "Tonga": 776,       "Trinidad and Tobago": 780,
+    "Tunisia": 788,     "Turkey": 792,      "Turkmenistan": 795,"Tuvalu": 798,
+    "Uganda": 800,      "Ukraine": 804,     "United Arab Emirates": 784,
+    "United Kingdom": 826, "United States": 840, "Uruguay": 858,"Uzbekistan": 860,
+    "Vanuatu": 548,     "Venezuela": 862,   "Vietnam": 704,     "Yemen": 887,
+    "Zambia": 894,      "Zimbabwe": 716,
+}
+
+_data_2019["iso_num"] = _data_2019["Country"].map(_ISO_NUM)
+_geo_df = _data_2019.dropna(subset=["iso_num", "Total Disease"]).copy()
+_geo_df["iso_num"] = _geo_df["iso_num"].astype(int)
+_geo_values = _geo_df[["Country", "iso_num", "Total Disease"]].to_dict(orient="records")
+
+_TOPO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+
+# Grey base layer (all countries) + coloured foreground layer (data countries only)
+_geo_bg = (
+    alt.Chart(alt.topo_feature(_TOPO_URL, "countries"))
+    .mark_geoshape(fill="#d4d4d4", stroke="#ffffff", strokeWidth=0.25)
+)
+
+_geo_fg = (
+    alt.Chart(alt.topo_feature(_TOPO_URL, "countries"))
+    .mark_geoshape(stroke="#ffffff", strokeWidth=0.25)
+    .transform_lookup(
+        lookup="id",
+        from_=alt.LookupData(
+            data=alt.InlineData(values=_geo_values),
+            key="iso_num",
+            fields=["Total Disease", "Country"]
+        )
+    )
+    .transform_filter("datum['Total Disease'] != null")
+    .encode(
+        color=alt.Color(
+            "Total Disease:Q",
+            scale=alt.Scale(scheme="yelloworangered"),
+            legend=alt.Legend(
+                title="Total Prevalence (% of population)",
+                orient="bottom",
+                direction="horizontal",
+                gradientLength=260,
+                gradientThickness=12,
+                **_LEGEND_STYLE,
+            )
+        ),
+        tooltip=[
+            alt.Tooltip("Country:N",       title="Country"),
+            alt.Tooltip("Total Disease:Q", title="Total Prevalence (%)", format=".2f"),
+        ]
+    )
+)
+
+_geo_layered = (
+    alt.layer(_geo_bg, _geo_fg)
+    .project(type="naturalEarth1")
+    .properties(width="container", height=420)
+    .configure_view(strokeWidth=0, fill="transparent")
+)
+
+# Inline any named datasets created by configure_*
+def _fix_named_datasets(spec):
+    datasets = spec.get("datasets", {})
+    if not datasets:
+        return
+    def _walk(node):
+        if isinstance(node, dict):
+            if "data" in node and isinstance(node["data"], dict):
+                name = node["data"].get("name")
+                if name and name in datasets:
+                    node["data"] = {"values": datasets[name]}
+            for v in node.values():
+                _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+    _walk(spec)
+    spec.pop("datasets", None)
+
+_geo_dict = _geo_layered.to_dict()
+_fix_named_datasets(_geo_dict)
+
+# Make the gradient legend span the full chart width using a Vega signal
+try:
+    _geo_dict["layer"][1]["encoding"]["color"]["legend"]["gradientLength"] = {"signal": "width"}
+except (KeyError, IndexError):
+    pass
+
+geo_spec = json.dumps(_geo_dict)
+
+# ---------------------------------------------------------------------------
+# Chart 5: Correlation — log(GDP) vs each disorder (Pearson r)
+# ---------------------------------------------------------------------------
+_agg_c = agg.copy()
+_agg_c["log_GDP"] = np.log10(_agg_c["GDP"])
+_corr_rows = []
+for _col in disorder_cols:
+    _r = float(_agg_c[["log_GDP", _col]].dropna().corr().iloc[0, 1])
+    _corr_rows.append({"Disorder": _col, "Correlation": round(_r, 3)})
+_corr_df = pd.DataFrame(_corr_rows)
+
+_corr_chart = (
+    alt.Chart(_corr_df)
+    .mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
+    .encode(
+        x=alt.X("Correlation:Q",
+                title="Pearson r  (log GDP vs. mean prevalence)",
+                scale=alt.Scale(domain=[-0.1, 0.5]),
+                axis=alt.Axis(grid=True, gridColor="#e9ecef", format=".2f",
+                              labelFontSize=11, titleFontSize=12,
+                              labelColor="#495057", titleColor="#343a40")),
+        y=alt.Y("Disorder:N", sort="-x", title=None,
+                axis=alt.Axis(labelFontSize=12, labelColor="#374151")),
+        color=alt.condition(
+            "datum.Correlation > 0",
+            alt.value("#3b82f6"),
+            alt.value("#ef5350")
+        ),
+        tooltip=[
+            alt.Tooltip("Disorder:N",     title="Disorder"),
+            alt.Tooltip("Correlation:Q",  title="Pearson r", format=".3f"),
+        ],
+    )
+    .properties(width="container", height=190)
+    .configure_view(strokeWidth=0)
+)
+_cd = _corr_chart.to_dict()
+if "datasets" in _cd and "data" in _cd:
+    _n = _cd["data"].get("name")
+    if _n and _n in _cd["datasets"]:
+        _cd["data"] = {"values": _cd["datasets"][_n]}
+        del _cd["datasets"]
+corr_spec = json.dumps(_cd)
+
+# ---------------------------------------------------------------------------
+# Chart 6: GDP-tier time trend — yearly avg prevalence, High vs Low GDP
+# ---------------------------------------------------------------------------
+_gdp_median  = agg["GDP"].median()
+_tier_map    = {r["Country"]: ("High GDP" if r["GDP"] >= _gdp_median else "Low GDP")
+                for _, r in agg.iterrows()}
+_trend_src   = df_no_world.copy()
+_trend_src["GDP Tier"] = _trend_src["Country"].map(_tier_map)
+_trend_src   = _trend_src.dropna(subset=["GDP Tier"])
+_trend_long  = (
+    _trend_src.groupby(["Year", "GDP Tier"])[disorder_cols].mean()
+    .reset_index()
+    .melt(id_vars=["Year", "GDP Tier"], value_vars=disorder_cols,
+          var_name="Disorder", value_name="Prevalence")
+)
+
+_trend_sel = alt.param(
+    name="TrendDisorder",
+    bind=alt.binding_select(options=disorder_cols, name="Disorder: "),
+    value="Depressive Disorders",
+)
+_trend_chart = (
+    alt.Chart(_trend_long)
+    .mark_line(strokeWidth=2.5,
+               point=alt.OverlayMarkDef(size=45, filled=True, strokeWidth=0))
+    .transform_filter("datum.Disorder == TrendDisorder")
+    .encode(
+        x=alt.X("Year:O", title="Year",
+                axis=alt.Axis(labelAngle=-30, labelFontSize=11, titleFontSize=12,
+                              labelColor="#495057", titleColor="#343a40",
+                              gridColor="#e9ecef")),
+        y=alt.Y("Prevalence:Q", title="Mean Prevalence (% of population)",
+                axis=alt.Axis(grid=True, gridColor="#e9ecef", labelFontSize=11,
+                              titleFontSize=12, labelColor="#495057",
+                              titleColor="#343a40")),
+        color=alt.Color("GDP Tier:N",
+                        scale=alt.Scale(domain=["High GDP", "Low GDP"],
+                                        range=["#1e40af", "#dc2626"]),
+                        legend=alt.Legend(title="GDP Tier", orient="top-left",
+                                          symbolSize=100, symbolType="square",
+                                          rowPadding=5, **_LEGEND_STYLE)),
+        tooltip=[
+            alt.Tooltip("Year:O",         title="Year"),
+            alt.Tooltip("GDP Tier:N",     title="GDP Tier"),
+            alt.Tooltip("Prevalence:Q",   title="Avg Prevalence (%)", format=".3f"),
+        ],
+    )
+    .add_params(_trend_sel)
+    .properties(width="container", height=340)
+    .configure_view(strokeWidth=0, fill="transparent")
+)
+_td = _trend_chart.to_dict()
+if "datasets" in _td and "data" in _td:
+    _n = _td["data"].get("name")
+    if _n and _n in _td["datasets"]:
+        _td["data"] = {"values": _td["datasets"][_n]}
+        del _td["datasets"]
+gdp_trend_spec = json.dumps(_td)
+
+# ---------------------------------------------------------------------------
+# Chart 7: Regional average prevalence (all disorders, all years)
+# ---------------------------------------------------------------------------
+_region_long = (
+    agg.copy()
+    .melt(id_vars=["region_label"], value_vars=disorder_cols,
+          var_name="Disorder", value_name="Prevalence")
+    .groupby(["region_label", "Disorder"])["Prevalence"]
+    .mean()
+    .reset_index()
+)
+
+_region_sel = alt.param(
+    name="RegionDisorder",
+    bind=alt.binding_select(options=disorder_cols, name="Disorder: "),
+    value="Depressive Disorders",
+)
+REGION_ORDER = [
+    "Americas", "Europe & Central Asia", "East Asia & Pacific",
+    "Middle East & N. Africa", "South Asia", "Sub-Saharan Africa", "Other",
+]
+_region_chart = (
+    alt.Chart(_region_long)
+    .mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
+    .transform_filter("datum.Disorder == RegionDisorder")
+    .encode(
+        x=alt.X("Prevalence:Q", title="Mean Prevalence (% of population)",
+                axis=alt.Axis(grid=True, gridColor="#e9ecef", labelFontSize=11,
+                              titleFontSize=12, labelColor="#495057",
+                              titleColor="#343a40")),
+        y=alt.Y("region_label:N", title=None, sort="-x",
+                axis=alt.Axis(labelFontSize=12, labelColor="#374151")),
+        color=alt.Color("region_label:N",
+                        scale=alt.Scale(
+                            domain=list(REGION_LABELS.values()),
+                            range=list(REGION_COLORS.values())),
+                        legend=None),
+        tooltip=[
+            alt.Tooltip("region_label:N", title="Region"),
+            alt.Tooltip("Prevalence:Q",   title="Mean Prevalence (%)", format=".3f"),
+        ],
+    )
+    .add_params(_region_sel)
+    .properties(width="container", height=240)
+    .configure_view(strokeWidth=0)
+)
+_rd = _region_chart.to_dict()
+if "datasets" in _rd and "data" in _rd:
+    _n = _rd["data"].get("name")
+    if _n and _n in _rd["datasets"]:
+        _rd["data"] = {"values": _rd["datasets"][_n]}
+        del _rd["datasets"]
+region_avg_spec = json.dumps(_rd)
+
+# ---------------------------------------------------------------------------
+# Per-disorder top 10 for interactive D3 chart on mental health page
+# ---------------------------------------------------------------------------
+mh_top10_data = {}
+for _col in disorder_cols:
+    _top = (
+        df_no_world.groupby("Country")[_col]
+        .max()
+        .reset_index()
+        .nlargest(10, _col)
+        .sort_values(_col, ascending=True)   # ascending → highest bar at top
+        .rename(columns={_col: "value"})
+    )
+    mh_top10_data[_col] = _top[["Country", "value"]].to_dict(orient="records")
+
+mh_top10_json = json.dumps(mh_top10_data)
