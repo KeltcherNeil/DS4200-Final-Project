@@ -153,7 +153,7 @@ REGION_LABELS = {
     "america":                  "Americas",
     "east_asia_pacific":        "East Asia & Pacific",
     "europe_central_asia":      "Europe & Central Asia",
-    "middle_east_north_africa": "Middle East & N. Africa",
+    "middle_east_north_africa": "Middle East & North Africa",
     "south_asia":               "South Asia",
     "sub_saharan_africa":       "Sub-Saharan Africa",
     "other":                    "Other",
@@ -233,7 +233,7 @@ chart = (
                         "{'america': 'Americas'"
                         ", 'east_asia_pacific': 'East Asia & Pacific'"
                         ", 'europe_central_asia': 'Europe & Central Asia'"
-                        ", 'middle_east_north_africa': 'Middle East & N. Africa'"
+                        ", 'middle_east_north_africa': 'Middle East & North Africa'"
                         ", 'south_asia': 'South Asia'"
                         ", 'sub_saharan_africa': 'Sub-Saharan Africa'"
                         ", 'other': 'Other'}[datum.value]"
@@ -696,7 +696,7 @@ _region_sel = alt.param(
 )
 REGION_ORDER = [
     "Americas", "Europe & Central Asia", "East Asia & Pacific",
-    "Middle East & N. Africa", "South Asia", "Sub-Saharan Africa", "Other",
+    "Middle East & North Africa", "South Asia", "Sub-Saharan Africa", "Other",
 ]
 _region_chart = (
     alt.Chart(_region_long)
@@ -747,3 +747,68 @@ for _col in disorder_cols:
     mh_top10_data[_col] = _top[["Country", "value"]].to_dict(orient="records")
 
 mh_top10_json = json.dumps(mh_top10_data)
+
+# ---------------------------------------------------------------------------
+# Chart: Top 10 Countries over Time — line chart with disorder dropdown
+# ---------------------------------------------------------------------------
+_top10_time_frames = []
+for _col in disorder_cols:
+    _top10_countries = (
+        df_no_world.groupby("Country")[_col].mean()
+        .nlargest(10).index.tolist()
+    )
+    _sub = (
+        df_no_world[df_no_world["Country"].isin(_top10_countries)]
+        [["Country", "Year", _col]].copy()
+        .rename(columns={_col: "Prevalence"})
+    )
+    _sub["Disorder"] = _col
+    _top10_time_frames.append(_sub)
+
+_top10_time_df = pd.concat(_top10_time_frames, ignore_index=True)
+
+_top10_time_sel = alt.param(
+    name="disorder_type",
+    value="Depressive Disorders",
+    bind=alt.binding_select(options=disorder_cols, name="Disorder: "),
+)
+
+_top10_time_chart = (
+    alt.Chart(_top10_time_df)
+    .mark_line(strokeWidth=2)
+    .transform_filter("datum.Disorder == disorder_type")
+    .encode(
+        x=alt.X("Year:O", title="Year",
+                axis=alt.Axis(labelAngle=-30, labelFontSize=11,
+                              labelColor="#495057", titleColor="#343a40")),
+        y=alt.Y("Prevalence:Q", title="Percentage of Population (%)",
+                axis=alt.Axis(grid=True, gridColor="#e9ecef", labelFontSize=11,
+                              titleFontSize=12, labelColor="#495057",
+                              titleColor="#343a40")),
+        color=alt.Color("Country:N",
+                        legend=alt.Legend(
+                            orient="right",
+                            labelFontSize=13,
+                            titleFontSize=14,
+                            symbolSize=250,
+                            symbolStrokeWidth=3,
+                            rowPadding=6,
+                            padding=10,
+                        )),
+        tooltip=[
+            alt.Tooltip("Country:N", title="Country"),
+            alt.Tooltip("Year:O", title="Year"),
+            alt.Tooltip("Prevalence:Q", format=".3f", title="Prevalence (%)"),
+        ],
+    )
+    .add_params(_top10_time_sel)
+    .properties(width="container", height=400)
+)
+
+_top10_time_dict = _top10_time_chart.to_dict()
+if "datasets" in _top10_time_dict and "data" in _top10_time_dict:
+    _n = _top10_time_dict["data"].get("name")
+    if _n and _n in _top10_time_dict["datasets"]:
+        _top10_time_dict["data"] = {"values": _top10_time_dict["datasets"][_n]}
+        del _top10_time_dict["datasets"]
+top10_time_spec = json.dumps(_top10_time_dict)

@@ -105,7 +105,7 @@
       margin-bottom: 0;
     }
     /* ── Chart vis containers must have explicit width for vega container sizing ── */
-    #vis, #vis3a, #vis3b, #vis4a, #vis4b, #vis-geo,
+    #vis, #vis-top10, #vis4a, #vis4b, #vis-geo,
     #vis-region { width: 100%; min-height: 10px; }
     .bar-panels { flex: 1; min-width: 0; }
 
@@ -597,7 +597,7 @@
 <nav class="navbar navbar-expand-lg site-nav sticky-top">
   <div class="container-fluid px-0">
     <a class="navbar-brand ms-0" href="index.html">
-      <i class="bi bi-globe2 me-2"></i>Mental Health Across the Globe
+      Mental Health Across the Globe
       <span class="brand-sub">/ Global Analysis</span>
     </a>
     <button class="navbar-toggler border-0 text-white" type="button"
@@ -609,17 +609,22 @@
         
       <li class="nav-item">
         <a class="nav-link" href="index.html">
-          <i class="bi bi-house me-1"></i>Overview
+          Home
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="gdp_mental_health.html">
-          <i class="bi bi-currency-dollar me-1"></i>GDP & Mental Health
+          GDP vs. Mental Health
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link active" href="mental_health.html">
-          <i class="bi bi-heart-pulse me-1"></i>Mental Health
+          Mental Health
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="key_findings.html">
+          Key Findings &amp; Conclusions
         </a>
       </li>
       </ul>
@@ -650,7 +655,6 @@
 
   <!-- ── Section 1: Interactive D3 Top-10 Rankings ── -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-bar-chart-steps"></i></div>
     <h2>Top 10 Country Rankings by Disorder</h2>
   </div>
   <div class="chart-card mb-4">
@@ -693,7 +697,6 @@
 
   <!-- ── Section 2: Choropleth world map ── -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-globe2"></i></div>
     <h2>Global Distribution of Mental Health Disorder Prevalence (2019)</h2>
   </div>
   <div class="chart-card mb-5">
