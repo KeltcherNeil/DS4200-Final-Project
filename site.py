@@ -5,7 +5,7 @@ from visualization import (
     gdp_top_spec, gdp_bottom_spec,
     gdp_trend_spec, region_avg_spec,
     DISORDER_COLOR_RANGE, mh_top10_json, geo_spec,
-    land_geojson_str, BASE,
+    land_geojson_str, BASE, top10_time_spec,
 )
 
 # ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ SHARED_CSS = """
       margin-bottom: 0;
     }
     /* ── Chart vis containers must have explicit width for vega container sizing ── */
-    #vis, #vis3a, #vis3b, #vis4a, #vis4b, #vis-geo,
+    #vis, #vis-top10, #vis4a, #vis4b, #vis-geo,
     #vis-region { width: 100%; min-height: 10px; }
     .bar-panels { flex: 1; min-width: 0; }
 
@@ -720,24 +720,25 @@ SHARED_CSS = """
 # ---------------------------------------------------------------------------
 def make_nav(active):
     pages = [
-        ("index.html",            "bi-house",            "Overview"),
-        ("gdp_mental_health.html","bi-currency-dollar",  "GDP & Mental Health"),
-        ("mental_health.html",    "bi-heart-pulse",      "Mental Health"),
+        ("index.html",             "Home"),
+        ("gdp_mental_health.html", "GDP vs. Mental Health"),
+        ("mental_health.html",     "Mental Health"),
+        ("key_findings.html",      "Key Findings &amp; Conclusions"),
     ]
     items = ""
-    for href, icon, label in pages:
+    for href, label in pages:
         cls = "nav-link active" if active == href else "nav-link"
         items += f"""
       <li class="nav-item">
         <a class="{cls}" href="{href}">
-          <i class="bi {icon} me-1"></i>{label}
+          {label}
         </a>
       </li>"""
     return f"""
 <nav class="navbar navbar-expand-lg site-nav sticky-top">
   <div class="container-fluid px-0">
     <a class="navbar-brand ms-0" href="index.html">
-      <i class="bi bi-globe2 me-2"></i>Mental Health Across the Globe
+      Mental Health Across the Globe
       <span class="brand-sub">/ Global Analysis</span>
     </a>
     <button class="navbar-toggler border-0 text-white" type="button"
@@ -834,10 +835,10 @@ index_html = f"""<!DOCTYPE html>
         </p>
         <div class="d-flex gap-2 flex-wrap mt-3">
           <a href="gdp_mental_health.html" class="btn-primary-site">
-            <i class="bi bi-currency-dollar"></i>GDP &amp; Mental Health
+            GDP vs. Mental Health
           </a>
           <a href="mental_health.html" class="btn-outline-site">
-            <i class="bi bi-heart-pulse"></i>Mental Health Overview
+            Mental Health
           </a>
         </div>
       </div>
@@ -850,7 +851,6 @@ index_html = f"""<!DOCTYPE html>
 
   <!-- Key statistics -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-bar-chart-line"></i></div>
     <h2>Dataset Summary</h2>
   </div>
   <div class="row g-3 mb-2">
@@ -884,60 +884,52 @@ index_html = f"""<!DOCTYPE html>
 
   <!-- Dataset summary -->
   <div class="section-header mt-4">
-    <div class="section-icon"><i class="bi bi-info-circle"></i></div>
     <h2>About this Dataset</h2>
   </div>
   <div class="chart-card mb-4">
     <div class="chart-card-body" style="line-height:1.85;">
       <p style="margin-bottom:0.9rem;">
         This dataset tracks the estimated prevalence of five major mental health disorders:
-        <strong>Depressive Disorders</strong>, <strong>Anxiety Disorders</strong>,
-        <strong>Bipolar Disorders</strong>, <strong>Schizophrenia</strong>, and
-        <strong>Eating Disorders</strong>, across <strong>{num_countries} countries</strong>
-        from <strong>{year_min} to {year_max}</strong>, sourced from the
+        Depressive Disorders, Anxiety Disorders,
+        Bipolar Disorders, Schizophrenia, and
+        Eating Disorders, across {num_countries} countries
+        from {year_min} to {year_max}, sourced from the
         <em>Global Burden of Disease (GBD) Study</em>. Prevalence figures represent the
         estimated share of each country&rsquo;s population affected in a given year.
-        Across the study period, <strong>{highest_disorder}</strong> is the most prevalent
-        disorder globally (avg.&nbsp;<strong>{highest_val:.2f}%</strong>), while
-        <strong>{lowest_disorder}</strong> is the least common.
+        Across the study period, {highest_disorder} is the most prevalent
+        disorder globally (avg.&nbsp;{highest_val:.2f}%), while
+        {lowest_disorder} is the least common.
       </p>
       <p style="margin-bottom:0.9rem;">
         The relationship between national wealth and mental health rates is real but nuanced.
         Countries above the global GDP median average a combined disorder prevalence of
-        <strong>{high_gdp_avg}%</strong>, compared to <strong>{low_gdp_avg}%</strong> for
+        {high_gdp_avg}%, compared to {low_gdp_avg}% for
         lower-income nations, a modest gap of roughly
-        <strong>{round(high_gdp_avg - low_gdp_avg, 2)} percentage points</strong>. This
+        {round(high_gdp_avg - low_gdp_avg, 2)} percentage points. This
         reflects a well-documented paradox: wealthier nations tend to report <em>higher</em>
         rates partly because they have greater diagnostic infrastructure and cultural
         acceptance of mental health disclosure, not necessarily because their populations
         are less mentally healthy. The effect is especially pronounced for
-        <strong>{most_corr_disorder}</strong> (Pearson r&nbsp;=&nbsp;{most_corr_r} with
+        {most_corr_disorder} (Pearson r&nbsp;=&nbsp;{most_corr_r} with
         log&nbsp;GDP), which is strongly associated with high-income, Western countries.
-        By contrast, <strong>{least_corr_disorder}</strong> shows almost no correlation
+        By contrast, {least_corr_disorder} shows almost no correlation
         with GDP (r&nbsp;=&nbsp;{least_corr_r}), suggesting its prevalence is distributed
         more evenly across income levels worldwide.
       </p>
       <p style="margin-bottom:0.9rem;">
-        Geographically, the <strong>{highest_region}</strong> region carries the highest
-        average total burden at <strong>{highest_region_val}%</strong>, while
-        <strong>{lowest_region}</strong> reports the lowest at
-        <strong>{lowest_region_val}%</strong>. At the country level,
-        <strong>{top_total_country}</strong> records the highest combined prevalence across
-        all five disorders at <strong>{top_total_val}%</strong>, nearly double the global
+        Geographically, the {highest_region} region carries the highest
+        average total burden at {highest_region_val}%, while
+        {lowest_region} reports the lowest at
+        {lowest_region_val}%. At the country level,
+        {top_total_country} records the highest combined prevalence across
+        all five disorders at {top_total_val}%, nearly double the global
         average, largely driven by elevated Anxiety and Depressive Disorder rates.
-      </p>
-      <p style="margin:0; color:var(--text-muted); font-size:0.82rem;">
-        <i class="bi bi-lightbulb me-1"></i>
-        Use the <strong>GDP &amp; Mental Health</strong> page to explore correlation patterns
-        and regional breakdowns interactively, or the <strong>Mental Health Overview</strong>
-        page for country-level rankings and a global prevalence map.
       </p>
     </div>
   </div>
 
   <!-- Disorder prevalence -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-activity"></i></div>
     <h2>Global Average Prevalence by Disorder</h2>
   </div>
   <div class="row g-3 mb-2">
@@ -946,23 +938,20 @@ index_html = f"""<!DOCTYPE html>
 
   <!-- Navigation cards -->
   <div class="section-header mt-4">
-    <div class="section-icon"><i class="bi bi-graph-up"></i></div>
     <h2>Analysis Pages</h2>
   </div>
   <div class="row g-3 mb-4">
     <div class="col-md-6">
       <a href="gdp_mental_health.html" class="nav-card">
-        <div class="nc-icon"><i class="bi bi-currency-dollar"></i></div>
-        <h3>GDP &amp; Mental Health</h3>
+        <h3>GDP vs. Mental Health</h3>
         <p>Explore the relationship between national income and disorder prevalence through
-           an interactive scatter plot and a GDP-tier comparison across all five disorders.</p>
+           an interactive scatter plot, regional breakdown, and top-10 country trends.</p>
         <div class="nc-arrow">View Analysis <i class="bi bi-arrow-right"></i></div>
       </a>
     </div>
     <div class="col-md-6">
       <a href="mental_health.html" class="nav-card">
-        <div class="nc-icon"><i class="bi bi-heart-pulse"></i></div>
-        <h3>Mental Health Overview</h3>
+        <h3>Mental Health</h3>
         <p>Examine country-level rankings for Anxiety Disorders prevalence, identifying the
            nations with the highest recorded rates across the study period.</p>
         <div class="nc-arrow">View Analysis <i class="bi bi-arrow-right"></i></div>
@@ -972,7 +961,6 @@ index_html = f"""<!DOCTYPE html>
 
   <!-- Dataset explorer -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-table"></i></div>
     <h2>Dataset Explorer</h2>
   </div>
   <div class="chart-card mb-5">
@@ -1056,14 +1044,14 @@ clearBtn.addEventListener("click", () => {{
 """
 
 # ---------------------------------------------------------------------------
-# gdp_mental_health.html - GDP & Mental Health Analysis
+# gdp_mental_health.html - GDP vs. Mental Health Analysis
 # ---------------------------------------------------------------------------
 gdp_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>GDP &amp; Mental Health: {SITE_TITLE}</title>
+  <title>GDP vs. Mental Health: {SITE_TITLE}</title>
   <link rel="stylesheet" href="{CDN_BS_CSS}"/>
   <link rel="stylesheet" href="{CDN_BI}"/>
   <script src="{CDN_VEGA}"></script>
@@ -1078,12 +1066,12 @@ gdp_html = f"""<!DOCTYPE html>
   <div class="container">
     <div class="header-inner">
       <div class="header-text">
-        <h1>GDP &amp; Mental Health Disorder Prevalence</h1>
+        <h1>GDP vs. Mental Health Disorder Prevalence</h1>
         <p>
-          Two complementary views of the relationship between national income and mental health
+          Three complementary views of the relationship between national income and mental health
           outcomes across {num_countries} countries ({year_min} to {year_max}). The scatter
-          plot reveals distributional patterns; the grouped bar chart enables direct cross-disorder
-          comparison by GDP tier.
+          plot reveals distributional patterns; the regional bar chart compares average disorder
+          burden across world regions; and the line chart tracks top-10 country trends over time.
         </p>
       </div>
       {GLOBE_HTML}
@@ -1094,7 +1082,6 @@ gdp_html = f"""<!DOCTYPE html>
 <div class="container-fluid py-4 px-4">
 
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-scatter-chart"></i></div>
     <h2>GDP vs. Disorder Prevalence: Country-Level Scatter</h2>
   </div>
   <div class="chart-card mb-4">
@@ -1128,7 +1115,6 @@ gdp_html = f"""<!DOCTYPE html>
   </div>
 
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-bar-chart-steps"></i></div>
     <h2>Average Prevalence by World Region</h2>
   </div>
   <div class="chart-card mb-4">
@@ -1164,47 +1150,29 @@ gdp_html = f"""<!DOCTYPE html>
   </div>
 
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-bar-chart"></i></div>
-    <h2>Disorder Prevalence by GDP Tier (2019)</h2>
+    <h2>Top 10 Countries: Disorder Prevalence Over Time</h2>
   </div>
   <div class="chart-card mb-5">
     <div class="chart-card-header">
-      <h3>All Five Disorders: Top 10 vs. Bottom 10 GDP Countries (2019)</h3>
+      <h3>Mental Health Disorders &mdash; Top 10 Countries by Prevalence Over Time</h3>
       <p>
-        A direct comparison of all five disorder prevalence rates between the ten highest-GDP
-        and ten lowest-GDP countries in 2019. Each group of bars represents one country;
-        color encodes disorder type.
+        Tracks disorder prevalence from {year_min} to {year_max} for the ten countries with the
+        highest average rates. Use the dropdown to switch between disorder types.
       </p>
     </div>
     <div class="chart-card-body">
-      <div class="chart-with-legend">
-        <div class="bar-panels">
-          <div id="vis3a"></div>
-          <div id="vis3b" style="margin-top:1.5rem;"></div>
-        </div>
-        <div class="html-legend">
-          <div class="legend-title">Disorder</div>
-          {bar_legend_html}
-        </div>
-      </div>
+      <div id="vis-top10"></div>
     </div>
     <div class="chart-insight">
       <p>
-        Placing the world's wealthiest and poorest nations side by side reveals a clear pattern: high-GDP
-        countries show noticeably elevated anxiety and depressive disorder rates, while low-GDP countries
-        present a flatter, more compressed profile across all five conditions.
-        In the top-10 group, led by nations such as the United States, China, Germany, and Japan,
-        Anxiety and Depressive Disorders dominate, often exceeding 4 to 5% of the population individually.
-        Eating Disorders are almost entirely absent from the bottom-10 panel, underscoring how strongly
-        this condition is tied to the cultural and economic context of wealthy, Western societies.
-        Bipolar Disorder and Schizophrenia, however, appear at broadly similar rates in both groups,
-        lending support to the view that these biologically-driven conditions are not meaningfully shaped
-        by national income.
-        The lowest-GDP countries, concentrated in Sub-Saharan Africa and parts of Asia, report lower
-        absolute prevalence, but the absence of bars should not be mistaken for an absence of burden:
-        limited diagnostic capacity and healthcare access mean many cases go undetected and unrecorded.
-        This comparison is one of the clearest illustrations in the dataset that economic development and
-        mental health reporting capacity are deeply intertwined.
+        Across all five disorders, the top-ranked countries remain largely consistent over
+        the 30-year period, suggesting that national burden is shaped by structural and
+        cultural factors rather than short-term fluctuations. Portugal and Brazil consistently
+        lead for Depressive and Anxiety Disorders, while Eating Disorder prevalence is
+        concentrated almost entirely in high-income, Western nations throughout the entire
+        timespan. The dropdown selector reveals that different disorders have distinct
+        geographic footprints: Schizophrenia and Bipolar Disorders show narrower cross-country
+        variation compared to Anxiety and Depressive Disorders.
       </p>
     </div>
   </div>
@@ -1216,10 +1184,9 @@ gdp_html = f"""<!DOCTYPE html>
 <script src="{CDN_BS_JS}"></script>
 <script>
   const embedOpts = {{ mode: "vega-lite", renderer: "svg", actions: false }};
-  vegaEmbed("#vis",        {chart_spec},       embedOpts).catch(console.error);
-  vegaEmbed("#vis-region", {region_avg_spec},  embedOpts).catch(console.error);
-  vegaEmbed("#vis3a",      {gdp_top_spec},     embedOpts).catch(console.error);
-  vegaEmbed("#vis3b",      {gdp_bottom_spec},  embedOpts).catch(console.error);
+  vegaEmbed("#vis",        {chart_spec},        embedOpts).catch(console.error);
+  vegaEmbed("#vis-region", {region_avg_spec},   embedOpts).catch(console.error);
+  vegaEmbed("#vis-top10",  {top10_time_spec},   embedOpts).catch(console.error);
 </script>
 <script src="{CDN_D3}"></script>
 {GLOBE_SCRIPT}
@@ -1270,7 +1237,6 @@ mh_html = f"""<!DOCTYPE html>
 
   <!-- ── Section 1: Interactive D3 Top-10 Rankings ── -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-bar-chart-steps"></i></div>
     <h2>Top 10 Country Rankings by Disorder</h2>
   </div>
   <div class="chart-card mb-4">
@@ -1313,7 +1279,6 @@ mh_html = f"""<!DOCTYPE html>
 
   <!-- ── Section 2: Choropleth world map ── -->
   <div class="section-header">
-    <div class="section-icon"><i class="bi bi-globe2"></i></div>
     <h2>Global Distribution of Mental Health Disorder Prevalence (2019)</h2>
   </div>
   <div class="chart-card mb-5">
@@ -1501,6 +1466,238 @@ mh_html = f"""<!DOCTYPE html>
 vis_html = gdp_html
 
 # ---------------------------------------------------------------------------
+# key_findings.html - Key Findings & Conclusions
+# ---------------------------------------------------------------------------
+kf_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Key Findings &amp; Conclusions: {SITE_TITLE}</title>
+  <link rel="stylesheet" href="{CDN_BS_CSS}"/>
+  <link rel="stylesheet" href="{CDN_BI}"/>
+  <style>{SHARED_CSS}
+    .finding-card {{
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--blue-light);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }}
+    .finding-card h4 {{
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.5rem;
+    }}
+    .finding-card p {{
+      font-size: 0.9rem;
+      color: var(--text-body);
+      line-height: 1.75;
+      margin: 0;
+    }}
+    .finding-number {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-right: 0.6rem;
+      flex-shrink: 0;
+    }}
+    .finding-title-row {{
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }}
+    .conclusion-box {{
+      background: var(--navy);
+      color: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }}
+    .conclusion-box h3 {{
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+    }}
+    .conclusion-box p {{
+      font-size: 0.92rem;
+      color: rgba(255,255,255,0.82);
+      line-height: 1.8;
+      margin-bottom: 0;
+    }}
+  </style>
+</head>
+<body>
+{make_nav("key_findings.html")}
+
+<div class="page-header">
+  <div class="container">
+    <div class="eyebrow">Summary</div>
+    <h1>Key Findings &amp; Conclusions</h1>
+    <p>
+      A synthesis of the major patterns and takeaways drawn from analyzing mental health
+      disorder prevalence across {num_countries} countries from {year_min} to {year_max}.
+    </p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <div class="section-header">
+    <h2>Key Findings</h2>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">1</span>
+      <h4>Anxiety Disorders are the most prevalent condition globally</h4>
+    </div>
+    <p>
+      Across all {num_countries} countries and the full {year_min} to {year_max} period,
+      Anxiety Disorders carry the highest average prevalence at {highest_val:.2f}% of the
+      population. Eating Disorders remain the least common condition in every region.
+      These rankings are stable over time, suggesting deeply structural drivers rather
+      than fluctuating trends.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">2</span>
+      <h4>Wealthier nations report higher prevalence, but not necessarily worse outcomes</h4>
+    </div>
+    <p>
+      Countries above the global GDP median average a combined disorder prevalence of
+      {high_gdp_avg}%, compared to {low_gdp_avg}% for lower-income nations, a gap of
+      just {round(high_gdp_avg - low_gdp_avg, 2)} percentage points. This modest
+      difference reflects a well-documented paradox: richer countries have stronger
+      diagnostic infrastructure, greater cultural openness to mental health disclosure,
+      and more specialists per capita. Higher reported rates are partly a signal of better
+      measurement, not necessarily greater suffering.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">3</span>
+      <h4>Eating Disorders are almost exclusively a high-income phenomenon</h4>
+    </div>
+    <p>
+      Of all five disorders, {most_corr_disorder} show the strongest correlation with
+      national wealth (Pearson r&nbsp;=&nbsp;{most_corr_r} with log GDP). They are nearly
+      absent from low-income countries and concentrated in Western, high-income nations.
+      This pattern reflects both genuine cultural risk factors and the fact that Eating
+      Disorders require specialist diagnosis that is rarely available in lower-resource settings.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">4</span>
+      <h4>Depressive Disorders show almost no relationship with GDP</h4>
+    </div>
+    <p>
+      With a Pearson correlation of just r&nbsp;=&nbsp;{least_corr_r} with log GDP,
+      {least_corr_disorder} are distributed more evenly across income levels than any other
+      condition. This suggests that depression is a truly global burden, influenced by
+      factors including grief, trauma, social isolation, and chronic illness, that are not
+      meaningfully tied to a country's economic development.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">5</span>
+      <h4>The Middle East &amp; North Africa carries the highest regional burden</h4>
+    </div>
+    <p>
+      The Middle East &amp; North Africa region records the highest average combined
+      disorder prevalence at {highest_region_val}%, particularly for Anxiety Disorders.
+      This likely reflects the compounding effects of prolonged conflict, displacement,
+      and socioeconomic instability across the region. By contrast, {lowest_region} reports
+      the lowest regional average at {lowest_region_val}%.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">6</span>
+      <h4>{top_total_country} records the highest country-level prevalence of any nation</h4>
+    </div>
+    <p>
+      {top_total_country} consistently ranks first in combined disorder prevalence at
+      {top_total_val}%, nearly double the global average, driven primarily by elevated
+      Anxiety and Depressive Disorder rates. This stands out even among high-income nations
+      and may reflect both genuine burden and a strong tradition of mental health research
+      and clinical reporting.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">7</span>
+      <h4>Country rankings are stable over three decades</h4>
+    </div>
+    <p>
+      The top-ranked countries for each disorder have remained largely consistent from
+      {year_min} to {year_max}, as shown in the time-series analysis on the GDP vs. Mental
+      Health page. This persistence suggests that national mental health burden is shaped by
+      long-term structural, cultural, and healthcare-system factors rather than year-to-year
+      events, and that meaningful improvement requires sustained, systemic intervention.
+    </p>
+  </div>
+
+  <div class="section-header mt-4">
+    <h2>Conclusion</h2>
+  </div>
+
+  <div class="conclusion-box">
+    <h3>What the data tells us, and what it doesn&rsquo;t</h3>
+    <p>
+      One key thing we learned from this project and our dataset is that measurement
+      capacity (the ability to detect, diagnose, and report mental illness) heavily
+      influences the reported rates of mental illnesses, arguably more than the actual
+      rates themselves. The relationship between GDP and mental illness is real, but it
+      is quite small, only {round(high_gdp_avg - low_gdp_avg, 2)}%, because wealthier
+      countries detect more, so they report more. Low-income countries almost certainly
+      have the same, if not higher rates that are just not captured due to lower measurement
+      capacity. Within the picture the data has painted, Eating Disorders are uniquely
+      Western, with higher ties to both wealth and Western countries. With an r-value of
+      {most_corr_r} (the strongest correlation with income of any disorder we measured),
+      the prevalence of Eating Disorders in Western countries shows not only the cultural
+      risk inherent to the West, but also their stronger ability to detect and measure these
+      illnesses. Depression, by contrast, is universal. With an r-value of {least_corr_r}
+      (in correlation to GDP), depression is roughly the same everywhere, a byproduct of
+      grief and isolation that can be found anywhere on the globe. The Middle East and
+      North Africa consistently rank highest in Anxiety Disorders, echoing centuries of war
+      and turmoil that still leave their scars today. However, what we think is the largest,
+      most important takeaway is that country rankings barely changed over these 30 years,
+      meaning the structural and social influences that cause these disorders are very deeply
+      entrenched in our societies, and to change this would require sustained commitment to
+      change on a scale currently unheard of.
+    </p>
+  </div>
+
+</div>
+
+{FOOTER}
+
+<script src="{CDN_BS_JS}"></script>
+</body>
+</html>
+"""
+
+# ---------------------------------------------------------------------------
 # Write files & open
 # ---------------------------------------------------------------------------
 for fname, content in [
@@ -1508,6 +1705,7 @@ for fname, content in [
     ("gdp_mental_health.html",gdp_html),
     ("mental_health.html",    mh_html),
     ("visualization.html",    vis_html),
+    ("key_findings.html",     kf_html),
 ]:
     with open(os.path.join(BASE, fname), "w", encoding="utf-8") as f:
         f.write(content)

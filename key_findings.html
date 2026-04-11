@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Key Findings &amp; Conclusions: Mental Health Across the Globe</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <style>
+    :root {
+      --navy:        #0d1b4b;
+      --navy-mid:    #1a3169;
+      --blue:        #1e40af;
+      --blue-mid:    #2952a3;
+      --blue-light:  #3b82f6;
+      --bg:          #f4f6fb;
+      --bg-card:     #ffffff;
+      --border:      #dde3f0;
+      --border-dark: #b8c2dc;
+      --text-head:   #0d1b4b;
+      --text-body:   #374151;
+      --text-muted:  #6b7280;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 0.95rem;
+      color: var(--text-body);
+      margin: 0;
+    }
+
+    /* ── Navbar ── */
+    .site-nav {
+      background: var(--navy);
+      border-bottom: 3px solid var(--blue-light);
+      padding: 0 2rem;
+    }
+    .site-nav .navbar-brand {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fff !important;
+      padding: 0.85rem 0;
+    }
+    .site-nav .navbar-brand span.brand-sub {
+      font-weight: 400;
+      opacity: 0.65;
+      font-size: 0.85rem;
+      margin-left: 0.4rem;
+    }
+    .site-nav .nav-link {
+      color: rgba(255,255,255,0.72) !important;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 0.9rem 1rem !important;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .site-nav .nav-link:hover {
+      color: #fff !important;
+      border-bottom-color: rgba(255,255,255,0.4);
+    }
+    .site-nav .nav-link.active {
+      color: #fff !important;
+      border-bottom-color: var(--blue-light);
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 3rem 2rem 3rem;
+      border-bottom: 1px solid var(--navy-mid);
+    }
+    .page-header .eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 0.6rem;
+    }
+    .page-header h1 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+    .page-header p {
+      font-size: 0.93rem;
+      color: rgba(255,255,255,0.72);
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 0;
+    }
+    /* ── Chart vis containers must have explicit width for vega container sizing ── */
+    #vis, #vis-top10, #vis4a, #vis4b, #vis-geo,
+    #vis-region { width: 100%; min-height: 10px; }
+    .bar-panels { flex: 1; min-width: 0; }
+
+    /* ── D3 disorder pills ── */
+    .dis-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.9rem 1.25rem;
+      background: #f8f9fc;
+      border-bottom: 1px solid var(--border);
+    }
+    .dis-pills .dis-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      align-self: center;
+      margin-right: 0.25rem;
+      white-space: nowrap;
+    }
+    .dis-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.28rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      color: var(--text-body);
+      font-size: 0.79rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .dis-pill:hover {
+      border-color: var(--blue-light);
+      color: var(--blue);
+      background: #f0f4ff;
+    }
+    .dis-pill.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+
+    /* ── D3 tooltip ── */
+    .d3-tip {
+      position: absolute;
+      background: rgba(13,27,75,0.92);
+      color: #fff;
+      padding: 0.45rem 0.75rem;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      pointer-events: none;
+      z-index: 9999;
+      line-height: 1.55;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+      white-space: nowrap;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+    .section-header .section-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--navy);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--blue-mid);
+      border-radius: 6px;
+      padding: 1.25rem 1.1rem;
+    }
+    .stat-card .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-head);
+      line-height: 1.1;
+    }
+    .stat-card .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    /* ── Disorder summary cards ── */
+    .disorder-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent-color, var(--blue-mid));
+      border-radius: 6px;
+      padding: 1.2rem 1rem;
+      text-align: center;
+    }
+    .disorder-card .d-icon {
+      font-size: 1.4rem;
+      color: var(--accent-color, var(--blue-mid));
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .disorder-card .d-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-head);
+      line-height: 1.1;
+    }
+    .disorder-card .d-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      font-weight: 500;
+    }
+
+    /* ── Chart card ── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .chart-card-header {
+      padding: 1rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .chart-card-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.25rem;
+    }
+    .chart-card-header p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .chart-card-body {
+      padding: 1rem 1.25rem 1.25rem;
+    }
+    .chart-insight {
+      margin: 0 1.25rem 1.25rem;
+      padding: 0.9rem 1.1rem;
+      background: #f4f6fb;
+      border-left: 4px solid #3b5bdb;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: #374151;
+    }
+    .chart-insight p {
+      margin: 0;
+    }
+
+    /* ── Vega-embed controls ── */
+    .vega-embed .vega-bindings {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2.5rem;
+      align-items: flex-start;
+      padding: 0.9rem 1.25rem;
+      background: #f8f9fc;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+    .vega-embed .vega-bind {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .vega-embed .vega-bind-name {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      white-space: nowrap;
+      margin-right: 0.15rem;
+    }
+
+    /* Hide native radio input, style label as pill toggle */
+    .vega-embed input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    .vega-embed label {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.28rem 0.7rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      color: var(--text-body);
+      font-size: 0.79rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .vega-embed label:hover {
+      border-color: var(--blue-light);
+      color: var(--blue);
+      background: #f0f4ff;
+    }
+    .vega-embed label:has(input[type="radio"]:checked) {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+
+    /* Disorder select dropdown */
+    .vega-embed select {
+      border: 1px solid var(--border-dark);
+      border-radius: 4px;
+      padding: 0.28rem 2rem 0.28rem 0.6rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-head);
+      background: #fff;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%230d1b4b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.55rem center;
+      transition: border-color 0.12s;
+    }
+    .vega-embed select:focus { outline: none; border-color: var(--blue-light); }
+    .vega-embed select:hover { border-color: var(--blue-light); }
+
+    /* ── Chart + HTML legend wrapper ── */
+    .chart-with-legend {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+    .chart-with-legend > [id^="vis"] {
+      flex: 1;
+      min-width: 0;
+    }
+    .html-legend {
+      flex-shrink: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      min-width: 155px;
+    }
+    .html-legend .legend-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+    .html-legend .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.45rem;
+      font-size: 0.82rem;
+      color: var(--text-body);
+    }
+    .html-legend .legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Data explorer ── */
+    .explorer-toolbar {
+      background: var(--navy);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .explorer-toolbar h3 {
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .filter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+    .filter-wrap label {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.78rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .filter-wrap select {
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      padding: 0.3rem 2rem 0.3rem 0.6rem;
+      font-size: 0.82rem;
+      color: var(--navy);
+      background: #fff;
+      cursor: pointer;
+      min-width: 175px;
+      max-width: 230px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%230d1b4b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.55rem center;
+    }
+    .filter-wrap select:focus { outline: none; }
+    .clear-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.85);
+      border-radius: 4px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .clear-btn:hover { background: rgba(255,255,255,0.22); }
+
+    table.dataTable thead th {
+      background: #1e3a6e !important;
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      border-color: #2952a3 !important;
+    }
+    table.dataTable tbody td { font-size: 0.83rem; }
+    table.dataTable tbody tr:hover { background: #eef1fa !important; }
+
+    /* ── CTA buttons ── */
+    .btn-primary-site {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--blue-light);
+      color: #fff;
+      padding: 0.6rem 1.4rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      border: none;
+      transition: background 0.15s;
+    }
+    .btn-primary-site:hover { background: #2563eb; color: #fff; }
+    .btn-outline-site {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      padding: 0.6rem 1.4rem;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 0.88rem;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-outline-site:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.5);
+      color: #fff;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.55);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--navy-mid);
+      padding: 2rem 0;
+    }
+    .site-footer strong { color: rgba(255,255,255,0.85); }
+    .site-footer a { color: rgba(255,255,255,0.55); text-decoration: none; }
+    .site-footer a:hover { color: rgba(255,255,255,0.85); }
+
+    /* ── Nav page card (index) ── */
+    .nav-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--text-body);
+      display: block;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .nav-card:hover {
+      border-color: var(--blue-light);
+      box-shadow: 0 4px 16px rgba(30,64,175,0.1);
+      color: var(--text-body);
+    }
+    .nav-card .nc-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--navy);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      margin-bottom: 0.9rem;
+    }
+    .nav-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.3rem;
+    }
+    .nav-card p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .nav-card .nc-arrow {
+      font-size: 0.8rem;
+      color: var(--blue-light);
+      margin-top: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ── Header globe layout ── */
+    .header-inner {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+    }
+    .header-text { flex: 1; min-width: 0; }
+    .header-globe-wrap {
+      flex-shrink: 0;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 18px rgba(59,130,246,0.35));
+    }
+    @media (max-width: 720px) {
+      .header-globe-wrap { display: none; }
+    }
+
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--blue-light);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .finding-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.5rem;
+    }
+    .finding-card p {
+      font-size: 0.9rem;
+      color: var(--text-body);
+      line-height: 1.75;
+      margin: 0;
+    }
+    .finding-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-right: 0.6rem;
+      flex-shrink: 0;
+    }
+    .finding-title-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .conclusion-box {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .conclusion-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .conclusion-box p {
+      font-size: 0.92rem;
+      color: rgba(255,255,255,0.82);
+      line-height: 1.8;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg site-nav sticky-top">
+  <div class="container-fluid px-0">
+    <a class="navbar-brand ms-0" href="index.html">
+      Mental Health Across the Globe
+      <span class="brand-sub">/ Global Analysis</span>
+    </a>
+    <button class="navbar-toggler border-0 text-white" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav-collapse">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="nav-collapse">
+      <ul class="navbar-nav ms-auto">
+        
+      <li class="nav-item">
+        <a class="nav-link" href="index.html">
+          Home
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="gdp_mental_health.html">
+          GDP vs. Mental Health
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="mental_health.html">
+          Mental Health
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" href="key_findings.html">
+          Key Findings &amp; Conclusions
+        </a>
+      </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <div class="eyebrow">Summary</div>
+    <h1>Key Findings &amp; Conclusions</h1>
+    <p>
+      A synthesis of the major patterns and takeaways drawn from analyzing mental health
+      disorder prevalence across 195 countries from 1990 to 2019.
+    </p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <div class="section-header">
+    <h2>Key Findings</h2>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">1</span>
+      <h4>Anxiety Disorders are the most prevalent condition globally</h4>
+    </div>
+    <p>
+      Across all 195 countries and the full 1990 to 2019 period,
+      Anxiety Disorders carry the highest average prevalence at 4.12% of the
+      population. Eating Disorders remain the least common condition in every region.
+      These rankings are stable over time, suggesting deeply structural drivers rather
+      than fluctuating trends.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">2</span>
+      <h4>Wealthier nations report higher prevalence, but not necessarily worse outcomes</h4>
+    </div>
+    <p>
+      Countries above the global GDP median average a combined disorder prevalence of
+      9.3%, compared to 8.71% for lower-income nations, a gap of
+      just 0.59 percentage points. This modest
+      difference reflects a well-documented paradox: richer countries have stronger
+      diagnostic infrastructure, greater cultural openness to mental health disclosure,
+      and more specialists per capita. Higher reported rates are partly a signal of better
+      measurement, not necessarily greater suffering.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">3</span>
+      <h4>Eating Disorders are almost exclusively a high-income phenomenon</h4>
+    </div>
+    <p>
+      Of all five disorders, Eating Disorders show the strongest correlation with
+      national wealth (Pearson r&nbsp;=&nbsp;0.355 with log GDP). They are nearly
+      absent from low-income countries and concentrated in Western, high-income nations.
+      This pattern reflects both genuine cultural risk factors and the fact that Eating
+      Disorders require specialist diagnosis that is rarely available in lower-resource settings.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">4</span>
+      <h4>Depressive Disorders show almost no relationship with GDP</h4>
+    </div>
+    <p>
+      With a Pearson correlation of just r&nbsp;=&nbsp;0.02 with log GDP,
+      Depressive Disorders are distributed more evenly across income levels than any other
+      condition. This suggests that depression is a truly global burden, influenced by
+      factors including grief, trauma, social isolation, and chronic illness, that are not
+      meaningfully tied to a country's economic development.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">5</span>
+      <h4>The Middle East &amp; North Africa carries the highest regional burden</h4>
+    </div>
+    <p>
+      The Middle East &amp; North Africa region records the highest average combined
+      disorder prevalence at 10.36%, particularly for Anxiety Disorders.
+      This likely reflects the compounding effects of prolonged conflict, displacement,
+      and socioeconomic instability across the region. By contrast, East Asia & Pacific reports
+      the lowest regional average at 7.61%.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">6</span>
+      <h4>Portugal records the highest country-level prevalence of any nation</h4>
+    </div>
+    <p>
+      Portugal consistently ranks first in combined disorder prevalence at
+      14.25%, nearly double the global average, driven primarily by elevated
+      Anxiety and Depressive Disorder rates. This stands out even among high-income nations
+      and may reflect both genuine burden and a strong tradition of mental health research
+      and clinical reporting.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">7</span>
+      <h4>Country rankings are stable over three decades</h4>
+    </div>
+    <p>
+      The top-ranked countries for each disorder have remained largely consistent from
+      1990 to 2019, as shown in the time-series analysis on the GDP vs. Mental
+      Health page. This persistence suggests that national mental health burden is shaped by
+      long-term structural, cultural, and healthcare-system factors rather than year-to-year
+      events, and that meaningful improvement requires sustained, systemic intervention.
+    </p>
+  </div>
+
+  <div class="section-header mt-4">
+    <h2>Conclusion</h2>
+  </div>
+
+  <div class="conclusion-box">
+    <h3>What the data tells us, and what it doesn&rsquo;t</h3>
+    <p>
+      One key thing we learned from this project and our dataset is that measurement
+      capacity (the ability to detect, diagnose, and report mental illness) heavily
+      influences the reported rates of mental illnesses, arguably more than the actual
+      rates themselves. The relationship between GDP and mental illness is real, but it
+      is quite small, only 0.59%, because wealthier
+      countries detect more, so they report more. Low-income countries almost certainly
+      have the same, if not higher rates that are just not captured due to lower measurement
+      capacity. Within the picture the data has painted, Eating Disorders are uniquely
+      Western, with higher ties to both wealth and Western countries. With an r-value of
+      0.355 (the strongest correlation with income of any disorder we measured),
+      the prevalence of Eating Disorders in Western countries shows not only the cultural
+      risk inherent to the West, but also their stronger ability to detect and measure these
+      illnesses. Depression, by contrast, is universal. With an r-value of 0.02
+      (in correlation to GDP), depression is roughly the same everywhere, a byproduct of
+      grief and isolation that can be found anywhere on the globe. The Middle East and
+      North Africa consistently rank highest in Anxiety Disorders, echoing centuries of war
+      and turmoil that still leave their scars today. However, what we think is the largest,
+      most important takeaway is that country rankings barely changed over these 30 years,
+      meaning the structural and social influences that cause these disorders are very deeply
+      entrenched in our societies, and to change this would require sustained commitment to
+      change on a scale currently unheard of.
+    </p>
+  </div>
+
+</div>
+
+
+<footer class="site-footer mt-5">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 mb-2 mb-md-0">
+        <strong>Mental Health Across the Globe</strong>
+      </div>
+      <div class="col-md-6 text-md-end">
+        Data sourced from the Global Burden of Disease Study,
+        195 countries, 1990 to 2019.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
