@@ -8,11 +8,8 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 # ---------------------------------------------------------------------------
 # Load & clean
 # ---------------------------------------------------------------------------
-df = pd.read_csv(os.path.join(BASE, "ds4200_final_data.csv"))
-df["GDP"] = pd.to_numeric(
-    df["Country GDP (millions USD)"].str.replace(r"[^\d.]", "", regex=True),
-    errors="coerce"
-)
+df = pd.read_csv(os.path.join(BASE, "ds4200_final_data_clean.csv"))
+df["GDP"] = pd.to_numeric(df["Country GDP (millions USD)"], errors="coerce")
 
 df_no_world = df[df["Country"] != "World"]
 

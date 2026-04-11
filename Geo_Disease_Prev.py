@@ -5,7 +5,7 @@ import geopandas as gpd
 import numpy as np
 
 # load dataset
-data = pd.read_csv('ds4200_final_data.csv')
+data = pd.read_csv('ds4200_final_data_clean.csv')
 
 # filter for 2019 drop '-N/a' GDP rows
 data['GDP'] = data['Country GDP (millions USD)'].str.replace(',','').str.split('(').str[0].str.strip()
