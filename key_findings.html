@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Key Findings &amp; Conclusions: Mental Health Across the Globe</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <style>
+    :root {
+      --navy:        #0d1b4b;
+      --navy-mid:    #1a3169;
+      --blue:        #1e40af;
+      --blue-mid:    #2952a3;
+      --blue-light:  #3b82f6;
+      --bg:          #f4f6fb;
+      --bg-card:     #ffffff;
+      --border:      #dde3f0;
+      --border-dark: #b8c2dc;
+      --text-head:   #0d1b4b;
+      --text-body:   #374151;
+      --text-muted:  #6b7280;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text-body);
+      font-size: 0.93rem;
+      margin: 0;
+    }
+
+    /* ── Navbar ── */
+    .site-nav {
+      background: var(--navy);
+      border-bottom: 3px solid var(--blue-light);
+      padding: 0 2rem;
+    }
+    .site-nav .navbar-brand {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fff !important;
+      padding: 0.85rem 0;
+    }
+    .site-nav .navbar-brand span.brand-sub {
+      font-weight: 400;
+      opacity: 0.65;
+      font-size: 0.85rem;
+      margin-left: 0.4rem;
+    }
+    .site-nav .nav-link {
+      color: rgba(255,255,255,0.72) !important;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 0.9rem 1rem !important;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .site-nav .nav-link:hover {
+      color: #fff !important;
+      border-bottom-color: rgba(255,255,255,0.4);
+    }
+    .site-nav .nav-link.active {
+      color: #fff !important;
+      border-bottom-color: var(--blue-light);
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 3rem 2rem;
+      border-bottom: 1px solid var(--navy-mid);
+    }
+    .page-header .eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 0.6rem;
+    }
+    .page-header h1 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+    .page-header p {
+      font-size: 0.93rem;
+      color: rgba(255,255,255,0.72);
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 0;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Chart / content card ── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .chart-card-header {
+      padding: 1rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .chart-card-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.3rem;
+    }
+    .chart-card-header p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .chart-card-body {
+      padding: 1rem 1.25rem 1.25rem;
+    }
+
+    /* ── Finding cards ── */
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--blue-light);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .finding-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin: 0 0 0.5rem;
+    }
+    .finding-card p {
+      font-size: 0.9rem;
+      color: var(--text-body);
+      line-height: 1.75;
+      margin: 0;
+    }
+    .finding-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-right: 0.6rem;
+      flex-shrink: 0;
+    }
+    .finding-title-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Conclusion box ── */
+    .conclusion-box {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 8px;
+      padding: 2rem 2rem;
+      margin-bottom: 2rem;
+    }
+    .conclusion-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .conclusion-box p {
+      font-size: 0.92rem;
+      color: rgba(255,255,255,0.82);
+      line-height: 1.8;
+      margin-bottom: 0.85rem;
+    }
+    .conclusion-box p:last-child { margin-bottom: 0; }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.55);
+      padding: 1.25rem 2rem;
+      font-size: 0.8rem;
+    }
+    .site-footer strong { color: rgba(255,255,255,0.85); }
+    .site-footer a { color: rgba(255,255,255,0.55); text-decoration: none; }
+    .site-footer a:hover { color: rgba(255,255,255,0.85); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg site-nav sticky-top">
+  <div class="container-fluid px-0">
+    <a class="navbar-brand ms-0" href="index.html">
+      Mental Health Across the Globe
+      <span class="brand-sub">/ Global Analysis</span>
+    </a>
+    <button class="navbar-toggler border-0 text-white" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav-collapse">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="nav-collapse">
+      <ul class="navbar-nav ms-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="index.html">
+          Home
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="gdp_mental_health.html">
+          GDP vs. Mental Health
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="mental_health.html">
+          Mental Health
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" href="key_findings.html">
+          Key Findings &amp; Conclusions
+        </a>
+      </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <div class="eyebrow">Summary</div>
+    <h1>Key Findings &amp; Conclusions</h1>
+    <p>
+      A synthesis of the major patterns and takeaways drawn from analyzing mental health
+      disorder prevalence across 195 countries from 1990 to 2019.
+    </p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <div class="section-header">
+    <h2>Key Findings</h2>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">1</span>
+      <h4>Anxiety Disorders are the most prevalent condition globally</h4>
+    </div>
+    <p>
+      Across all 195 countries and the full 1990 to 2019 period, Anxiety Disorders
+      carry the highest average prevalence at 4.12% of the population, followed by
+      Depressive Disorders at 3.78%. Eating Disorders remain the least common condition
+      in every region. These rankings are stable over time, suggesting deeply structural
+      drivers rather than fluctuating trends.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">2</span>
+      <h4>Wealthier nations report higher prevalence, but not necessarily worse outcomes</h4>
+    </div>
+    <p>
+      Countries above the global GDP median average a combined disorder prevalence of
+      9.3%, compared to 8.71% for lower-income nations, a gap of just 0.59
+      percentage points. This modest difference reflects a well-documented paradox:
+      richer countries have stronger diagnostic infrastructure, greater cultural
+      openness to mental health disclosure, and more specialists per capita. Higher
+      reported rates are partly a signal of better measurement, not necessarily
+      greater suffering.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">3</span>
+      <h4>Eating Disorders are almost exclusively a high-income phenomenon</h4>
+    </div>
+    <p>
+      Of all five disorders, Eating Disorders show the strongest correlation with
+      national wealth (Pearson r&nbsp;=&nbsp;0.355 with log GDP). They are nearly
+      absent from low-income countries and concentrated in Western, high-income nations.
+      This pattern likely reflects both genuine cultural risk factors (body-image norms,
+      diet culture) and the fact that Eating Disorders require specialist diagnosis that
+      is rarely available in lower-resource settings.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">4</span>
+      <h4>Depressive Disorders show almost no relationship with GDP</h4>
+    </div>
+    <p>
+      With a Pearson correlation of just r&nbsp;=&nbsp;0.02 with log GDP, Depressive
+      Disorders are distributed more evenly across income levels than any other condition.
+      This suggests that depression is a truly global burden, influenced by factors
+      including grief, trauma, social isolation, and chronic illness, that are not
+      meaningfully tied to a country&rsquo;s economic development.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">5</span>
+      <h4>The Middle East &amp; North Africa carries the highest regional burden</h4>
+    </div>
+    <p>
+      The Middle East &amp; North Africa region records the highest average combined
+      disorder prevalence at 10.36%, particularly for Anxiety Disorders. This likely
+      reflects the compounding effects of prolonged conflict, displacement, and
+      socioeconomic instability across the region. By contrast, East Asia &amp; Pacific
+      reports the lowest regional average at 7.61%, shaped by both cultural norms around
+      mental health disclosure and historically lower investment in psychiatric services.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">6</span>
+      <h4>Portugal records the highest country-level prevalence of any nation</h4>
+    </div>
+    <p>
+      Portugal consistently ranks first in combined disorder prevalence at 14.25%,
+      nearly double the global average, driven primarily by elevated Anxiety and
+      Depressive Disorder rates. This stands out even among high-income European nations
+      and may reflect both genuine burden and Portugal&rsquo;s strong tradition of mental
+      health research and clinical reporting.
+    </p>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-title-row">
+      <span class="finding-number">7</span>
+      <h4>Country rankings are stable over three decades</h4>
+    </div>
+    <p>
+      The top-ranked countries for each disorder have remained largely consistent from
+      1990 to 2019, as shown in the time-series analysis on the GDP vs. Mental Health
+      page. This persistence suggests that national mental health burden is shaped by
+      long-term structural, cultural, and healthcare-system factors rather than
+      year-to-year events, and that meaningful improvement requires sustained,
+      systemic intervention.
+    </p>
+  </div>
+
+  <div class="section-header mt-4">
+    <h2>Conclusion</h2>
+  </div>
+
+  <div class="conclusion-box">
+    <h3>What the data tells us, and what it doesn&rsquo;t</h3>
+    <p>
+      One key thing we learned from this project and our dataset is that measurement
+      capacity (the ability to detect, diagnose, and report mental illness) heavily
+      influences the reported rates of mental illnesses, arguably more than the actual
+      rates themselves. The relationship between GDP and mental illness is real, but it
+      is quite small, only 0.59%, because wealthier countries detect more, so they report
+      more. Low-income countries almost certainly have the same, if not higher rates that
+      are just not captured due to lower measurement capacity. Within the picture the data
+      has painted, Eating Disorders are uniquely Western, with higher ties to both wealth
+      and Western countries. With an r-value of 0.355 (the strongest correlation with
+      income of any disorder we measured), the prevalence of Eating Disorders in Western
+      countries shows not only the cultural risk inherent to the West, but also their
+      stronger ability to detect and measure these illnesses. Depression, by contrast, is
+      universal. With an r-value of 0.02 (in correlation to GDP), depression is roughly
+      the same everywhere, a byproduct of grief and isolation that can be found anywhere
+      on the globe. The Middle East and North Africa consistently rank highest in Anxiety
+      Disorders, echoing centuries of war and turmoil that still leave their scars today.
+      However, what we think is the largest, most important takeaway is that country
+      rankings barely changed over these 30 years, meaning the structural and social
+      influences that cause these disorders are very deeply entrenched in our societies,
+      and to change this would require sustained commitment to change on a scale currently
+      unheard of.
+    </p>
+  </div>
+
+</div>
+
+<footer class="site-footer mt-5">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 mb-2 mb-md-0">
+        <strong>Mental Health Across the Globe</strong>
+      </div>
+      <div class="col-md-6 text-md-end">
+        Data sourced from the Global Burden of Disease Study,
+        195 countries, 1990 to 2019.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
