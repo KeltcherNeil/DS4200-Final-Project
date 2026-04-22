@@ -3,7 +3,7 @@ from visualization import (
     df_no_world, disorder_cols, REGION_COLORS,
     chart_spec, anxiety_top10_spec,
     gdp_top_spec, gdp_bottom_spec,
-    gdp_trend_spec, region_avg_spec,
+    gdp_trend_spec, region_avg_spec, region_gdp_spec, country_time_spec,
     DISORDER_COLOR_RANGE, mh_top10_json, geo_spec,
     land_geojson_str, BASE, top10_time_spec,
 )
@@ -229,7 +229,7 @@ SHARED_CSS = """
     }
     /* ── Chart vis containers must have explicit width for vega container sizing ── */
     #vis, #vis-top10, #vis4a, #vis4b, #vis-geo,
-    #vis-region { width: 100%; min-height: 10px; }
+    #vis-region, #vis-region-gdp, #vis-country-time { width: 100%; min-height: 10px; }
     .bar-panels { flex: 1; min-width: 0; }
 
     /* ── D3 disorder pills ── */
@@ -721,8 +721,8 @@ SHARED_CSS = """
 def make_nav(active):
     pages = [
         ("index.html",             "Home"),
-        ("gdp_mental_health.html", "GDP vs. Mental Health"),
         ("mental_health.html",     "Mental Health"),
+        ("gdp_mental_health.html", "GDP vs. Mental Health"),
         ("key_findings.html",      "Key Findings &amp; Conclusions"),
     ]
     items = ""
@@ -963,7 +963,7 @@ index_html = f"""<!DOCTYPE html>
   <div class="section-header">
     <h2>Dataset Explorer</h2>
   </div>
-  <div class="chart-card mb-5">
+  <div class="chart-card mb-4">
     <div class="explorer-toolbar">
       <h3><i class="bi bi-table me-2"></i>{num_records:,} Records, {num_countries} Countries</h3>
       <div class="filter-wrap">
@@ -989,6 +989,24 @@ index_html = f"""<!DOCTYPE html>
         </thead>
         <tbody id="table-body"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>References</h2>
+  </div>
+  <div class="chart-card mb-4">
+    <div class="chart-card-body">
+      <h6 class="fw-bold mb-2">Research</h6>
+      <ul class="mb-3">
+        <li><a href="https://doi.org/10.1016/S2215-0366(14)70277-9" target="_blank" rel="noopener">Whiteford et al. (2014) — Global burden of disease attributable to mental and substance use disorders. <em>The Lancet Psychiatry.</em> https://doi.org/10.1016/S2215-0366(14)70277-9</a></li>
+        <li><a href="https://doi.org/10.1186/s12889-023-16871-6" target="_blank" rel="noopener">Tabler et al. (2023) — GDP and mental health outcomes across nations. <em>BMC Public Health.</em> https://doi.org/10.1186/s12889-023-16871-6</a></li>
+      </ul>
+      <h6 class="fw-bold mb-2">Data</h6>
+      <ul class="mb-0">
+        <li><a href="https://www.kaggle.com/datasets/imtkaggleteam/mental-health" target="_blank" rel="noopener">Mental Health Dataset — Kaggle (imtkaggleteam). https://www.kaggle.com/datasets/imtkaggleteam/mental-health</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)" target="_blank" rel="noopener">List of Countries by GDP (Nominal) — Wikipedia. https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)</a></li>
+      </ul>
     </div>
   </div>
 
@@ -1119,15 +1137,24 @@ gdp_html = f"""<!DOCTYPE html>
   </div>
   <div class="chart-card mb-4">
     <div class="chart-card-header">
-      <h3>Mean Disorder Prevalence by Region (All Years)</h3>
+      <h3>Mean Disorder Prevalence &amp; Average GDP by Region (All Years)</h3>
       <p>
         Country-level averages aggregated by world region. Select a disorder to compare
-        regional baselines and identify which parts of the world carry the highest burden
-        for each condition.
+        regional prevalence baselines (left). Average GDP per region (right) is static
+        and does not change with disorder selection.
       </p>
     </div>
     <div class="chart-card-body">
-      <div id="vis-region"></div>
+      <div class="mb-3">
+        <label for="region-disorder-select" class="fw-semibold small me-2">Disorder:</label>
+        <select id="region-disorder-select" class="form-select form-select-sm d-inline-block" style="width:auto;">
+          {''.join(f'<option{"  selected" if d == "Depressive Disorders" else ""}>{d}</option>' for d in disorder_cols)}
+        </select>
+      </div>
+      <div style="display:flex; gap:1.5rem;">
+        <div style="flex:1; min-width:0;"><div id="vis-region"></div></div>
+        <div style="flex:1; min-width:0;"><div id="vis-region-gdp"></div></div>
+      </div>
     </div>
     <div class="chart-insight">
       <p>
@@ -1177,6 +1204,22 @@ gdp_html = f"""<!DOCTYPE html>
     </div>
   </div>
 
+  <div class="section-header">
+    <h2>All Disorders Over Time by Country</h2>
+  </div>
+  <div class="chart-card mb-5">
+    <div class="chart-card-header">
+      <h3>Disorder Prevalence Over Time &mdash; Country View</h3>
+      <p>
+        Select a country to see how all five disorder types have trended from
+        {year_min} to {year_max}. Average GDP is shown in the top-right corner of the chart.
+      </p>
+    </div>
+    <div class="chart-card-body">
+      <div id="vis-country-time"></div>
+    </div>
+  </div>
+
 </div>
 
 {FOOTER}
@@ -1184,9 +1227,15 @@ gdp_html = f"""<!DOCTYPE html>
 <script src="{CDN_BS_JS}"></script>
 <script>
   const embedOpts = {{ mode: "vega-lite", renderer: "svg", actions: false }};
-  vegaEmbed("#vis",        {chart_spec},        embedOpts).catch(console.error);
-  vegaEmbed("#vis-region", {region_avg_spec},   embedOpts).catch(console.error);
-  vegaEmbed("#vis-top10",  {top10_time_spec},   embedOpts).catch(console.error);
+  vegaEmbed("#vis",            {chart_spec},        embedOpts).catch(console.error);
+  vegaEmbed("#vis-region", {region_avg_spec}, embedOpts).then(function(r) {{
+    document.getElementById("region-disorder-select").addEventListener("change", function(e) {{
+      r.view.signal("RegionDisorder", e.target.value).run();
+    }});
+  }});
+  vegaEmbed("#vis-region-gdp", {region_gdp_spec}, embedOpts).catch(console.error);
+  vegaEmbed("#vis-top10",      {top10_time_spec},   embedOpts).catch(console.error);
+  vegaEmbed("#vis-country-time", {country_time_spec}, embedOpts).catch(console.error);
 </script>
 <script src="{CDN_D3}"></script>
 {GLOBE_SCRIPT}
@@ -1283,10 +1332,10 @@ mh_html = f"""<!DOCTYPE html>
   </div>
   <div class="chart-card mb-5">
     <div class="chart-card-header">
-      <h3>Total Mental Health Disorder Prevalence by Country (2019)</h3>
+      <h3>Mental Health Disorder Prevalence by Country (2019)</h3>
       <p>
-        Combined prevalence of all five disorders: Depressive, Anxiety, Bipolar,
-        Schizophrenia, and Eating Disorders, as a percentage of population in 2019.
+        Prevalence as a percentage of population in 2019. Use the dropdown to switch
+        between All Disorders (combined) and individual disorder types.
         Grey countries have no data available. Hover a country for details.
       </p>
     </div>

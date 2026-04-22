@@ -103,7 +103,7 @@
     }
     /* ── Chart vis containers must have explicit width for vega container sizing ── */
     #vis, #vis-top10, #vis4a, #vis4b, #vis-geo,
-    #vis-region { width: 100%; min-height: 10px; }
+    #vis-region, #vis-region-gdp, #vis-country-time { width: 100%; min-height: 10px; }
     .bar-panels { flex: 1; min-width: 0; }
 
     /* ── D3 disorder pills ── */
@@ -610,13 +610,13 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="gdp_mental_health.html">
-          GDP vs. Mental Health
+        <a class="nav-link" href="mental_health.html">
+          Mental Health
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="mental_health.html">
-          Mental Health
+        <a class="nav-link" href="gdp_mental_health.html">
+          GDP vs. Mental Health
         </a>
       </li>
       <li class="nav-item">
@@ -807,7 +807,7 @@
   <div class="section-header">
     <h2>Dataset Explorer</h2>
   </div>
-  <div class="chart-card mb-5">
+  <div class="chart-card mb-4">
     <div class="explorer-toolbar">
       <h3><i class="bi bi-table me-2"></i>5,850 Records, 195 Countries</h3>
       <div class="filter-wrap">
@@ -1027,6 +1027,24 @@
         </thead>
         <tbody id="table-body"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>References</h2>
+  </div>
+  <div class="chart-card mb-4">
+    <div class="chart-card-body">
+      <h6 class="fw-bold mb-2">Research</h6>
+      <ul class="mb-3">
+        <li><a href="https://doi.org/10.1016/S2215-0366(14)70277-9" target="_blank" rel="noopener">Whiteford et al. (2014) — Global burden of disease attributable to mental and substance use disorders. <em>The Lancet Psychiatry.</em> https://doi.org/10.1016/S2215-0366(14)70277-9</a></li>
+        <li><a href="https://doi.org/10.1186/s12889-023-16871-6" target="_blank" rel="noopener">Tabler et al. (2023) — GDP and mental health outcomes across nations. <em>BMC Public Health.</em> https://doi.org/10.1186/s12889-023-16871-6</a></li>
+      </ul>
+      <h6 class="fw-bold mb-2">Data</h6>
+      <ul class="mb-0">
+        <li><a href="https://www.kaggle.com/datasets/imtkaggleteam/mental-health" target="_blank" rel="noopener">Mental Health Dataset — Kaggle (imtkaggleteam). https://www.kaggle.com/datasets/imtkaggleteam/mental-health</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)" target="_blank" rel="noopener">List of Countries by GDP (Nominal) — Wikipedia. https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)</a></li>
+      </ul>
     </div>
   </div>
 
