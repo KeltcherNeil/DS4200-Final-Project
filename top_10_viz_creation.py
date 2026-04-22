@@ -6,13 +6,11 @@ df = pd.read_csv('ds4200_final_data.csv')
 disorders = ['Schizophrenia', 'Depressive Disorders', 'Anxiety Disorders',
              'Bipolar Disorders', 'Eating Disorders']
 
-# Compute top 10 countries for each disorder by change score
 def get_top10(df, item):
     grouped = df.groupby('Country')[item]
     change = (grouped.max() - grouped.min()) / grouped.sum()
     return change.nlargest(10).index.tolist()
 
-# Build combined dataframe tagged by which disorder was used to rank
 frames = []
 for disorder in disorders:
     top10 = get_top10(df, disorder)
@@ -22,7 +20,6 @@ for disorder in disorders:
 
 combined = pd.concat(frames, ignore_index=True)
 
-# Dropdown: which disorder to rank by (also plots that disorder on Y axis)
 rank_dropdown = alt.binding_select(options=disorders, name='Rank top 10 by: ')
 rank_select = alt.selection_point(
     fields=['rank_by'],
